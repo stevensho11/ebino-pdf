@@ -28,7 +28,6 @@ export default function Home() {
               "group mt-5 active:scale-95 transition-transform duration-100",
           })}
           href="/dashboard"
-          target="_blank"
         >
           To Dashboard{" "}
           <ArrowRightCircle className="group-hover:translate-x-1 transition ease-in-out duration-300 ml-2 h-5 w-5" />
