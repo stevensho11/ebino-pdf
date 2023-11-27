@@ -20,6 +20,7 @@
     "@trpc/next": "^10.44.0",
     "@trpc/react-query": "^10.44.0",
     "@trpc/server": "^10.44.0",
+    "aws-sdk": "^2.1502.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
@@ -32,12 +33,14 @@
     "react-pdf": "^7.5.1",
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
+    "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/uuid": "^9.0.7",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.0.3",

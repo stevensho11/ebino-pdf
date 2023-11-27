@@ -3,6 +3,8 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { TRPCError } from "@trpc/server";
 import { db } from "@/db";
 import { z } from "zod";
+import { v4 as uuidv4 } from 'uuid';
+import { s3Client } from "./s3-client";
 
 export const appRouter = router({
   authCallback: publicProcedure.query(async () => {
@@ -58,7 +60,30 @@ export const appRouter = router({
     })
 
     return file
-  })
+  }),
+  getPresignedUrl: privateProcedure
+    .input(z.object({ fileName: z.string() }))
+    .mutation(async ({ input }) => {
+      const { fileName } = input;
+      const uniqueFileName = `${uuidv4()}-${fileName}`;
+      const { getUser } = getKindeServerSession();
+      const user = await getUser();
+
+    if (!user || !user.id || !user.email)
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+
+      const postParams = {
+        Bucket: process.env.AWS_S3_BUCKET,
+        Fields: {
+          key: uniqueFileName, // Use a unique name for the key
+        },
+        Expires: 60, // Time in seconds before the pre-signed URL expires
+      };
+
+      const presignedPostData = await s3Client.createPresignedPost(postParams);
+
+      return presignedPostData;
+    }),
 });
 
 export type AppRouter = typeof appRouter;
