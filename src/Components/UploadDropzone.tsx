@@ -4,63 +4,78 @@ import { Cloud, File, FileX } from "lucide-react";
 import { Progress } from "./ui/progress";
 import { trpc } from "@/app/_trpc/client";
 
-const UploadDropzone = () => {
-    const [isUploading, setIsUploading] = useState<boolean>(true);
-    const [uploadProgress, setUploadProgress] = useState<number>(0);
-    const getPresignedUrl = trpc.getPresignedUrl.useMutation();
-  
-  
-    const handleFileUpload = async (file: File) => {
-      // Check if the file is a PDF
-    if (file.type !== 'application/pdf') {
+const UploadDropzone: React.FC = () => {
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const getPresignedUrl = trpc.getPresignedUrl.useMutation();
+  const validateFileSize = trpc.validateFileSize.useMutation();
+
+  const handleFileUpload = async (file: File | null) => {
+    if (!file) {
+      console.error('No file selected');
       return;
     }
-  
-      setIsUploading(true);
-  
-  
-      try {
-        // Call the tRPC procedure to get the presigned URL
-        const { url, fields } = await getPresignedUrl.mutateAsync({ fileName: file.name });
-  
-        // Form data to send to S3
-        const formData = new FormData();
-        Object.entries(fields).forEach(([key, value]) => {
-          formData.append(key, value as string);
-        });
-        formData.append('file', file);
-  
-        const xhr = new XMLHttpRequest();
-  
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percentComplete = Math.round((event.loaded / event.total) * 100);
-            setUploadProgress(percentComplete); // Update progress bar
-          }
-        };
-  
-        xhr.onload = () => {
-          if (xhr.status === 200) {
-            console.log('File uploaded successfully');
-            setUploadProgress(100); // Set progress to 100% on successful upload
-          } else {
-            console.error('Failed to upload file');
-          }
-          setIsUploading(false);
-        };
-    
-        xhr.onerror = () => {
-          console.error('File upload failed');
-          setIsUploading(false);
-        };
-    
-        xhr.open('POST', url);
-        xhr.send(formData);
-      } catch (error) {
-        console.error('File upload failed', error);
-        setIsUploading(false);
+
+    // Validate file size and type
+    try {
+      const validationResponse = await validateFileSize.mutateAsync({
+        fileSize: file.size,
+        mimeType: file.type
+      });
+
+      if (!validationResponse.allowUpload) {
+        console.error(`Upload denied: ${validationResponse.reason}`);
+        return;
       }
-    };
+    } catch (error) {
+      console.error('Error during file validation', error);
+      return;
+    }
+
+    // If validation passes, continue with upload process
+    setIsUploading(true);
+    try {
+      const { url, fields } = await getPresignedUrl.mutateAsync({ fileName: file.name });
+
+      const formData = new FormData();
+      Object.entries(fields).forEach(([key, value]) => {
+        formData.append(key, value as string);
+      });
+      formData.append('file', file);
+
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percentComplete);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          console.log('File uploaded successfully');
+          setUploadProgress(100);
+        } else {
+          console.error('Failed to upload file');
+        }
+        setIsUploading(false);
+      };
+
+      xhr.onerror = () => {
+        console.error('File upload failed');
+        setIsUploading(false);
+      };
+
+      xhr.open('POST', url);
+      xhr.send(formData);
+    } catch (error) {
+      console.error('File upload failed', error);
+      setIsUploading(false);
+    }
+  };
+
+
   
     return <Dropzone multiple={false} onDrop={(acceptedFiles) => handleFileUpload(acceptedFiles[0])}>
       {({getRootProps, getInputProps, acceptedFiles}) => (

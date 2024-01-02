@@ -61,6 +61,27 @@ export const appRouter = router({
 
     return file
   }),
+  validateFileSize: privateProcedure
+  .input(z.object({
+    fileSize: z.number(),
+    mimeType: z.string()
+  }))
+  .mutation(async ({ input }) => {
+    const { fileSize, mimeType } = input;
+    const maxFileSize = 4 * 1024 * 1024; // 4 MB max file size
+
+    console.log(`Received file size: ${fileSize}, MIME type: ${mimeType}`); // Debug log
+
+    if (mimeType !== 'application/pdf') {
+      return { allowUpload: false, reason: 'File must be a PDF' };
+    }
+
+    if (fileSize > maxFileSize) {
+      return {allowUpload: false, reason: 'File size too big'}
+    }
+
+    return { allowUpload: true, reason: 'Good to upload'};
+  }),
   getPresignedUrl: privateProcedure
     .input(z.object({ fileName: z.string() }))
     .mutation(async ({ input }) => {
