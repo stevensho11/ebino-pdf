@@ -3,12 +3,64 @@ import Dropzone from "react-dropzone";
 import { Cloud, File, FileX } from "lucide-react";
 import { Progress } from "./ui/progress";
 import { trpc } from "@/app/_trpc/client";
+import { useToast } from './ui/use-toast';
 
 const UploadDropzone: React.FC = () => {
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const getPresignedUrl = trpc.getPresignedUrl.useMutation();
   const validateFileSize = trpc.validateFileSize.useMutation();
+  const createFileRecord = trpc.createFileRecord.useMutation();
+  const { toast } = useToast();
+
+  const renderFileValidation = (acceptedFiles: File[]) => {
+    if (acceptedFiles && acceptedFiles[0]) {
+        const file = acceptedFiles[0];
+
+        if (file.type === 'application/pdf') {
+            if (file.size <= 4 * 1024 * 1024) {
+                // File is a PDF and size is within limit
+                return (
+                    <div className="max-w-xs bg-white flex items-center rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200">
+                        <div className="px-3 py-2 h-full grid place-items-center">
+                            <File className="h-4 w-4 text-green-500"/>
+                        </div>
+                        <div className="px-3 py-2 h-full text-sm truncate">
+                            {file.name}
+                        </div>
+                    </div>
+                );
+            } else {
+                // File is a PDF but size is too large
+                return (
+                    <div className="max-w-xs bg-white flex items-center rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200">
+                        <div className="px-3 py-2 h-full grid place-items-center">
+                            <FileX className="h-4 w-4 text-red-500"/>
+                        </div>
+                        <div className="px-3 py-2 h-full text-sm text-red-500">
+                            File size exceeds 4MB
+                        </div>
+                    </div>
+                );
+            }
+        } else {
+            // File is not a PDF
+            return (
+                <div className="max-w-xs bg-white flex items-center rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200">
+                    <div className="px-3 py-2 h-full grid place-items-center">
+                        <FileX className="h-4 w-4 text-red-500"/>
+                    </div>
+                    <div className="px-3 py-2 h-full text-sm text-red-500">
+                        Please upload only PDF files
+                    </div>
+                </div>
+            );
+        }
+    }
+    // No file is selected
+    return null;
+};
+
 
   const handleFileUpload = async (file: File | null) => {
     if (!file) {
@@ -35,7 +87,9 @@ const UploadDropzone: React.FC = () => {
     // If validation passes, continue with upload process
     setIsUploading(true);
     try {
-      const { url, fields } = await getPresignedUrl.mutateAsync({ fileName: file.name });
+      const response = await getPresignedUrl.mutateAsync({ fileName: file.name });
+      const { presignedPostData, key } = response;
+      const { url, fields } = presignedPostData;
 
       const formData = new FormData();
       Object.entries(fields).forEach(([key, value]) => {
@@ -52,12 +106,35 @@ const UploadDropzone: React.FC = () => {
         }
       };
 
-      xhr.onload = () => {
+      xhr.onload = async () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          console.log('File uploaded successfully');
-          setUploadProgress(100);
+            console.log('File uploaded successfully');
+            setUploadProgress(100);
+    
+            try {
+                const fileRecord = await createFileRecord.mutateAsync({
+                    name: file.name,
+                    key: key,
+                });
+                // Handle successful creation of file record (e.g., redirect or update UI)
+                console.log(key, ' | ', url);
+            } catch (error) {
+                console.error('Error creating file record', error);
+                // Handle error in creating file record
+            }
+    
+            toast({
+                title: 'Success',
+                description: 'File uploaded successfully',
+                variant: 'default'
+            });
         } else {
           console.error('Failed to upload file');
+          toast({
+            title: 'Error',
+            description: 'Failed to upload file',
+            variant: 'destructive'
+        });
         }
         setIsUploading(false);
       };
@@ -65,13 +142,24 @@ const UploadDropzone: React.FC = () => {
       xhr.onerror = () => {
         console.error('File upload failed');
         setIsUploading(false);
+        toast({
+          title: 'Error',
+          description: 'Failed to upload file',
+          variant: 'destructive'
+      }) 
       };
 
+      
       xhr.open('POST', url);
       xhr.send(formData);
     } catch (error) {
       console.error('File upload failed', error);
       setIsUploading(false);
+      toast({
+        title: 'Error',
+        description: 'Failed to upload file',
+        variant: 'destructive'
+    }) 
     }
   };
 
@@ -91,33 +179,18 @@ const UploadDropzone: React.FC = () => {
                 </p>
                 <p className="text-xs text-zinc-500">PDF (up to 4MB)</p>
               </div>
-              {acceptedFiles && acceptedFiles[0] ? acceptedFiles[0].type === 'application/pdf' ? (
-                <div className="max-w-xs bg-white flex items-center rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200">
-                  <div className="px-3 py-2 h-full grid place-items-center">
-                    <File className="h-4 w-4 text-green-500"/>
-                  </div>
-                  <div className="px-3 py-2 h-full text-sm truncate">
-                    {acceptedFiles[0].name}
-                  </div>
-                </div>
-              ) : (
-                <div className="max-w-xs bg-white flex items-center rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200">
-                  <div className="px-3 py-2 h-full grid place-items-center">
-                    <FileX className="h-4 w-4 text-red-500"/>
-                  </div>
-                  <div className="px-3 py-2 h-full text-sm truncate text-red-500">
-                    Please upload only PDF files
-                  </div>
-                </div>
-              ) : (
-                null
-              )}
-  
+              {renderFileValidation(acceptedFiles)}
               {isUploading ? (
                 <div className="w-full mt-4 max-w-xs mx-auto">
                   <Progress value={uploadProgress} className="h-1 w-full bg-zinc-200"/>
                 </div>
               ) : (null)}
+
+              <input 
+              {...getInputProps()}
+              type="file" 
+              id='dropzone-file' 
+              className='hidden'/>
             </label>
           </div>
         </div>

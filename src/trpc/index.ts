@@ -42,6 +42,26 @@ export const appRouter = router({
       }
     })
   }),
+  // TO DO - handle post-upload to s3 - sync with database
+  createFileRecord: privateProcedure
+    .input(z.object({
+        name: z.string(),
+        key: z.string(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+        const {userId} = ctx
+
+        const newFile = await db.file.create({
+            data: {
+                name: input.name,
+                key: input.key,
+                userId: userId,
+                url: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${input.key}`
+            }
+        });
+
+        return newFile;
+    }),
   deleteFile: privateProcedure.input(z.object({id: z.string()})
   ).mutation(async ({ctx, input}) => {
     const {userId} = ctx
@@ -103,7 +123,9 @@ export const appRouter = router({
 
       const presignedPostData = await s3Client.createPresignedPost(postParams);
 
-      return presignedPostData;
+      return { presignedPostData,
+        key: uniqueFileName
+      };
     }),
 });
 

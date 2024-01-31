@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import Navbar from "@/Components/Navbar";
 import Providers from "@/Components/Providers";
 import "react-loading-skeleton/dist/skeleton.css";
+import { Toaster } from "@/Components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,6 +29,7 @@ export default function RootLayout({
             inter.className
           )}
         >
+          <Toaster />
           <Navbar />
           {children}
         </body>
