@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -7,6 +6,7 @@ import Navbar from "@/Components/Navbar";
 import Providers from "@/Components/Providers";
 import "react-loading-skeleton/dist/skeleton.css";
 import { Toaster } from "@/Components/ui/toaster";
+import "simplebar-react/dist/simplebar.min.css";
 
 const inter = Inter({ subsets: ["latin"] });
 

@@ -1,16 +1,24 @@
 import { useState } from "react";
 import Dropzone from "react-dropzone";
-import { Cloud, File, FileX } from "lucide-react";
+import { Cloud, File, FileX, Loader2 } from "lucide-react";
 import { Progress } from "./ui/progress";
 import { trpc } from "@/app/_trpc/client";
 import { useToast } from './ui/use-toast';
+import { useRouter } from "next/navigation";
 
 const UploadDropzone: React.FC = () => {
+  const router = useRouter();
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const getPresignedUrl = trpc.getPresignedUrl.useMutation();
   const validateFileSize = trpc.validateFileSize.useMutation();
-  const createFileRecord = trpc.createFileRecord.useMutation();
+  const { mutate: createFileRecord } = trpc.createFileRecord.useMutation({
+    onSuccess: (file) => {
+      router.push(`/dashboard/${file.id}`)
+    },
+    retry: true,
+    retryDelay: 500,
+  });
   const { toast } = useToast();
 
   const renderFileValidation = (acceptedFiles: File[]) => {
@@ -110,34 +118,41 @@ const UploadDropzone: React.FC = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
             console.log('File uploaded successfully');
             setUploadProgress(100);
+
+            setTimeout(() => {
+                try {
+                    createFileRecord({
+                        name: file.name,
+                        key: key, 
+                    })
+                } catch (error) {
+                    console.error('Error creating file record', error);
+                    toast({
+                        title: 'Error',
+                        description: 'Error creating file record',
+                        variant: 'destructive'
+                    });
+                }
     
-            try {
-                const fileRecord = await createFileRecord.mutateAsync({
-                    name: file.name,
-                    key: key,
+                toast({
+                    title: 'Success',
+                    description: 'File uploaded successfully',
+                    variant: 'default'
                 });
-                // Handle successful creation of file record (e.g., redirect or update UI)
-                console.log(key, ' | ', url);
-            } catch (error) {
-                console.error('Error creating file record', error);
-                // Handle error in creating file record
-            }
+                setIsUploading(false); 
+            }, 750);
     
-            toast({
-                title: 'Success',
-                description: 'File uploaded successfully',
-                variant: 'default'
-            });
         } else {
-          console.error('Failed to upload file');
-          toast({
-            title: 'Error',
-            description: 'Failed to upload file',
-            variant: 'destructive'
-        });
+            console.error('Failed to upload file');
+            toast({
+                title: 'Error',
+                description: 'Failed to upload file',
+                variant: 'destructive'
+            });
+            setIsUploading(false);
         }
-        setIsUploading(false);
-      };
+    };
+    
 
       xhr.onerror = () => {
         console.error('File upload failed');
@@ -183,6 +198,10 @@ const UploadDropzone: React.FC = () => {
               {isUploading ? (
                 <div className="w-full mt-4 max-w-xs mx-auto">
                   <Progress value={uploadProgress} className="h-1 w-full bg-zinc-200"/>
+                  {uploadProgress === 100 ? <div className="flex gap-1 items-center justify-center text-zinc-700 text-sm text-center pt-2">
+                    <Loader2 className="h-3 w-3 animate-spin"/> 
+                    Redirecting...
+                  </div> : (null)}
                 </div>
               ) : (null)}
 

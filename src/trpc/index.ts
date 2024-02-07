@@ -42,7 +42,6 @@ export const appRouter = router({
       }
     })
   }),
-  // TO DO - handle post-upload to s3 - sync with database
   createFileRecord: privateProcedure
     .input(z.object({
         name: z.string(),
@@ -56,9 +55,12 @@ export const appRouter = router({
                 name: input.name,
                 key: input.key,
                 userId: userId,
-                url: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${input.key}`
+                url: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${input.key}`,
+                uploadStatus: 'PROCESSING',
             }
         });
+
+        if (!newFile) throw new TRPCError({code: 'NOT_FOUND'});
 
         return newFile;
     }),
@@ -116,9 +118,9 @@ export const appRouter = router({
       const postParams = {
         Bucket: process.env.AWS_S3_BUCKET,
         Fields: {
-          key: uniqueFileName, // Use a unique name for the key
+          key: uniqueFileName, 
         },
-        Expires: 60, // Time in seconds before the pre-signed URL expires
+        Expires: 60, 
       };
 
       const presignedPostData = await s3Client.createPresignedPost(postParams);
@@ -126,6 +128,35 @@ export const appRouter = router({
       return { presignedPostData,
         key: uniqueFileName
       };
+    }),
+    getSignedUrl: privateProcedure
+    .input(z.object({ fileId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const { getUser } = getKindeServerSession();
+      const user = await getUser();
+
+      if (!user || !user.id || !user.email) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const file = await db.file.findFirst({
+        where: {
+          id: input.fileId,
+          userId: user.id, 
+        },
+      });
+
+      if (!file) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "File not found or access denied." });
+      }
+
+      const signedUrl = s3Client.getSignedUrl('getObject', {
+        Bucket: process.env.AWS_S3_BUCKET,
+        Key: file.key,
+        Expires: 60 * 5, 
+      });
+
+      return { url: signedUrl };
     }),
 });
 
