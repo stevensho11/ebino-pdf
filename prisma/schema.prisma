@@ -21,6 +21,7 @@ model User {
   stripeCurrentPeriodEnd DateTime? @map(name: "stripe_current_period_end")
 
   files File[]
+  Message Message[]
 }
 
 enum uploadStatus {
@@ -38,9 +39,25 @@ model File {
 
   url String
   key String
+  messages Message[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userId String // Foreign key field
-  user User @relation(fields: [userId], references: [id]) // Relation definition
+  userId String? // Foreign key field
+  user User? @relation(fields: [userId], references: [id]) // Relation definition
+}
+
+model Message {
+  id String @id @default(cuid())
+  text String @db.Text()
+
+  isUserMessage Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  File      File?    @relation(fields: [fileId], references: [id])
+  fileId    String?
 }
