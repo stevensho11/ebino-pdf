@@ -5,6 +5,11 @@ import { db } from "@/db";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { s3Client } from "./s3-client";
+import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import { pinecone } from "@/lib/pinecone";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { PineconeStore } from "@langchain/pinecone";
+import { INFINITE_QUERY_LIMIT } from "@/config/infinite-query";
 
 export const appRouter = router({
   authCallback: publicProcedure.query(async () => {
@@ -66,6 +71,7 @@ export const appRouter = router({
 
       return newFile;
     }),
+    
   deleteFile: privateProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -76,6 +82,7 @@ export const appRouter = router({
           userId,
         },
       });
+      
 
       if (!file) throw new TRPCError({ code: "NOT_FOUND" });
       await db.file.delete({
@@ -111,11 +118,10 @@ export const appRouter = router({
     }),
   getPresignedUrl: privateProcedure
     .input(z.object({ fileName: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { fileName } = input;
       const uniqueFileName = `${uuidv4()}-${fileName}`;
-      const { getUser } = getKindeServerSession();
-      const user = await getUser();
+      const {user, userId} = ctx;
 
       if (!user || !user.id || !user.email)
         throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -149,8 +155,7 @@ export const appRouter = router({
   getSignedUrl: privateProcedure
     .input(z.object({ fileId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const { getUser } = getKindeServerSession();
-      const user = await getUser();
+      const {userId, user} = ctx;
 
       if (!user || !user.id || !user.email) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -162,6 +167,7 @@ export const appRouter = router({
           userId: user.id,
         },
       });
+
 
       if (!file) {
         throw new TRPCError({
@@ -177,6 +183,105 @@ export const appRouter = router({
       });
 
       return { url: signedUrl };
+    }),
+    processPDF: privateProcedure.input(z.object({
+      fileId: z.string(),
+      signedUrl: z.string(),
+    })).mutation(async ({input, ctx}) => {
+      const {fileId, signedUrl} = input;
+      const { userId } = ctx;
+
+      const file = await db.file.findFirst({
+        where: {
+          id: input.fileId,
+          userId: userId,
+        }
+      });
+      if(!file || file.userId !== userId) {
+        throw new TRPCError({code: 'FORBIDDEN', message: 'Access Denied.'})
+      }
+      try {
+        const response = await fetch(signedUrl);
+        const blob = await response.blob();
+
+        const loader = new PDFLoader(blob);
+        const pageLevelDocs = await loader.load();
+
+        const pagesAmt = pageLevelDocs.length;
+
+        const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!)
+        const embeddings = new OpenAIEmbeddings({
+          openAIApiKey: process.env.OPENAI_API_KEY,
+        });
+
+        await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
+          pineconeIndex,
+          namespace: fileId,
+        });
+
+        // Update file status to SUCCESS
+        await db.file.update({
+          where: { id: fileId },
+          data: { uploadStatus: 'SUCCESS' },
+        });
+
+        return { status: 'success', message: 'PDF processed successfully.' };
+      } catch (err) {
+        // Log the error and update file status to FAILED
+        console.error('Error processing PDF:', err);
+        await db.file.update({
+          where: { id: fileId },
+          data: { uploadStatus: 'FAILED' },
+        });
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to process PDF.' });
+      }
+    }),
+    getFileMessages: privateProcedure.input(z.object({
+      limit: z.number().min(1).max(100).nullish(),
+      cursor: z.string().nullish(),
+      fileId: z.string()
+    })
+    ).query(async ({ctx, input}) => {
+      const {userId} = ctx;
+      const {fileId, cursor} = input;
+      const limit = input.limit ?? INFINITE_QUERY_LIMIT;
+
+      const file = await db.file.findFirst({
+        where: {
+          id: fileId,
+          userId
+        }
+      })
+
+      if(!file) throw new TRPCError ({code: 'NOT_FOUND'})
+
+      const messages = await db.message.findMany({
+        take: limit + 1,
+        where: {
+          fileId
+        },
+        orderBy: {
+          createdAt: "desc"
+        },
+        cursor: cursor ? {id: cursor} : undefined,
+        select: {
+          id: true,
+          isUserMessage: true,
+          createdAt: true,
+          text: true
+        }
+      })
+
+      let nextCursor: typeof cursor | undefined = undefined;
+      if(messages.length > limit) {
+        const nextItem = messages.pop();
+        nextCursor = nextItem?.id
+      }
+
+      return {
+        messages,
+        nextCursor
+      }
     }),
 });
 

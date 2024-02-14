@@ -38,7 +38,7 @@ interface PdfRendererProps {
 }
 
 const PdfRenderer = ({ fileId }: PdfRendererProps) => {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState<string>("");
   const [numPages, setNumPages] = useState<number | null>(null);
   const getSignedUrl = trpc.getSignedUrl.useMutation();
   const [isFetching, setIsFetching] = useState(false);

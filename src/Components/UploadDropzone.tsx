@@ -12,9 +12,32 @@ const UploadDropzone: React.FC = () => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const getPresignedUrl = trpc.getPresignedUrl.useMutation();
   const validateFileSize = trpc.validateFileSize.useMutation();
+  const getSignedUrl = trpc.getSignedUrl.useMutation();
+  const processPDF = trpc.processPDF.useMutation();
   const { mutate: createFileRecord } = trpc.createFileRecord.useMutation({
     onSuccess: (file) => {
-      router.push(`/dashboard/${file.id}`);
+      getSignedUrl.mutate(
+        { fileId: file.id },
+        {
+          onSuccess: (data) => {
+            console.log(data.url);
+            processPDF.mutate(
+              { fileId: file.id, signedUrl: data.url },
+              {
+                onSuccess: () => {
+                  router.push(`/dashboard/${file.id}`);
+                },
+                onError: (error) => {
+                  console.error("Couldn't process PDF on server", error);
+                },
+              }
+            );
+          },
+          onError: (error) => {
+            console.error("Couldn't fetch signed URL", error);
+          },
+        }
+      );
     },
     retry: true,
     retryDelay: 500,
