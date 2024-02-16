@@ -29,7 +29,7 @@ const Message = ({ message, isNextMessageSamePerson }: MessageProps) => {
         {message.isUserMessage ? (
           <Icons.user className="fill-zinc-200 text-zinc-200 h-3/4 w-3/4" />
         ) : (
-          <Icons.logo className="fill-zinc-300 h-3/4 w-3/4" />
+          <Icons.logo className="fill-zinc-300" />
         )}
       </div>
       <div
