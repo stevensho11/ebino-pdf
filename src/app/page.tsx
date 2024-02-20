@@ -60,6 +60,7 @@ opacity-30 sm:left-[calc(50%-30rem)] sm:w-[84.1875rem]"
                     width={1364}
                     height={866}
                     quality={100}
+                    priority={false}
                     className="rounded-md bg-white p-2 sm:p-8 md:p-20 shadow-2xl ring-1 ring-gray-900/10"
                   />
                 </div>
