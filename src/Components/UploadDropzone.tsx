@@ -49,7 +49,7 @@ const UploadDropzone: React.FC = () => {
       const file = acceptedFiles[0];
 
       if (file.type === "application/pdf") {
-        if (file.size <= 4 * 1024 * 1024) {
+        if (file.size <= 8 * 1024 * 1024) {
           // File is a PDF and size is within limit
           return (
             <div className="max-w-xs bg-white flex items-center rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200">

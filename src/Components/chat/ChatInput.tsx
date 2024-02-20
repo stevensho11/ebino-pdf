@@ -34,8 +34,8 @@ const ChatInput = ({ isDisabled }: ChatInputProps) => {
                     textareaRef.current?.focus();
                   }
                 }}
-                placeholder="Ask a question!"
-                className="resize-none pr-12 text-base py-3 scrollbar-thumb-green scrollbar-thumb-rounded scrollbar-track-green-lighter scrollbar-w-2 scrolling-touch"
+                placeholder="Enter your question..."
+                className="resize-none pr-12 text-base py-3 scrollbar-thumb-blue scrollbar-thumb-rounded scrollbar-track-blue-lighter scrollbar-w-2 scrolling-touch"
               />
 
               <Button

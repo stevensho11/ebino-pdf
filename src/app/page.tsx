@@ -55,7 +55,7 @@ opacity-30 sm:left-[calc(50%-30rem)] sm:w-[84.1875rem]"
               <div className="mt-16 flow-root sm:mt-24">
                 <div className="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
                   <Image
-                    src="/dashboard-preview.jpg"
+                    src="/ebino-dashboard-preview.jpg"
                     alt="product preview"
                     width={1364}
                     height={866}
@@ -143,7 +143,7 @@ opacity-30 sm:left-[calc(50%-36rem)] sm:w-[84.1875rem] scale-y-[-1]"
           <div className="mt-16 flow-root sm:mt-24">
             <div className="-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4">
               <Image
-                src="/file-upload-preview.jpg"
+                src="/ebino-file-preview.jpg"
                 alt="upload preview"
                 width={1419}
                 height={732}

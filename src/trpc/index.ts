@@ -101,7 +101,7 @@ export const appRouter = router({
     )
     .mutation(async ({ input }) => {
       const { fileSize, mimeType } = input;
-      const maxFileSize = 4 * 1024 * 1024; // 4 MB max file size
+      const maxFileSize = 8 * 1024 * 1024; // 8 MB max file size
 
       console.log(`Received file size: ${fileSize}, MIME type: ${mimeType}`); // Debug log
 
