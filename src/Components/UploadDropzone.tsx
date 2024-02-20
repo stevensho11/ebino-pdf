@@ -69,7 +69,7 @@ const UploadDropzone: React.FC = () => {
                 <FileX className="h-4 w-4 text-red-500" />
               </div>
               <div className="px-3 py-2 h-full text-sm text-red-500">
-                File size exceeds 4MB
+                File size exceeds 8MB
               </div>
             </div>
           );
@@ -222,7 +222,7 @@ const UploadDropzone: React.FC = () => {
                   <span className="font-semibold">Click to upload</span> or drag
                   and drop
                 </p>
-                <p className="text-xs text-zinc-500">PDF (up to 4MB)</p>
+                <p className="text-xs text-zinc-500">PDF (up to 8MB)</p>
               </div>
               {renderFileValidation(acceptedFiles)}
               {isUploading ? (
