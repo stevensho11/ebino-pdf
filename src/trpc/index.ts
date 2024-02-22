@@ -41,29 +41,29 @@ export const appRouter = router({
 
     return { success: true };
   }),
-  createStripeSession: privateProcedure.mutation(async ({ctx}) => {
-    const {userId} = ctx;
-    const billingUrl = absoluteUrl("/dashboard/billing")
+  createStripeSession: privateProcedure.mutation(async ({ ctx }) => {
+    const { userId } = ctx;
+    const billingUrl = absoluteUrl("/dashboard/billing");
 
-    if(!userId) throw new TRPCError({code: "UNAUTHORIZED"})
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
     const dbUser = await db.user.findFirst({
       where: {
-        id: userId
-      }
-    })
+        id: userId,
+      },
+    });
 
-    if(!dbUser) throw new TRPCError({code: "UNAUTHORIZED"})
+    if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
 
-    const subscriptionPlan = await getUserSubscriptionPlan()
+    const subscriptionPlan = await getUserSubscriptionPlan();
 
-    if(subscriptionPlan.isSubscribed && dbUser.stripeCustomerId) {
+    if (subscriptionPlan.isSubscribed && dbUser.stripeCustomerId) {
       const stripeSession = await stripe.billingPortal.sessions.create({
         customer: dbUser.stripeCustomerId,
-        return_url: billingUrl
-      })
+        return_url: billingUrl,
+      });
 
-      return {url: stripeSession.url}
+      return { url: stripeSession.url };
     }
 
     const stripeSession = await stripe.checkout.sessions.create({
@@ -75,15 +75,15 @@ export const appRouter = router({
       line_items: [
         {
           price: PLANS.find((plan) => plan.name === "Pro")?.price.priceIds.test,
-          quantity: 1
-        }
+          quantity: 1,
+        },
       ],
       metadata: {
-        userId: userId
-      }
-    })
+        userId: userId,
+      },
+    });
 
-    return {url: stripeSession.url}
+    return { url: stripeSession.url };
   }),
   getUserFiles: privateProcedure.query(async ({ ctx }) => {
     const { userId } = ctx;
@@ -131,14 +131,39 @@ export const appRouter = router({
       });
 
       if (!file) throw new TRPCError({ code: "NOT_FOUND" });
-      await db.file.delete({
-        where: {
-          id: input.id,
-        },
-      });
+      try {
+        const params = {
+          Bucket: process.env.AWS_S3_BUCKET!,
+          Key: file.key,
+        };
+        await s3Client.deleteObject(params).promise();
+      } catch (error) {
+        console.error("Failed to delete the file from S3", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to delete the file from S3",
+        });
+      }
 
-      return file;
+      try {
+        await db.file.delete({
+          where: {
+            id: input.id,
+          },
+        });
+        return { success: true };
+      } catch (error) {
+        console.error(
+          "Failed to delete the file record from the database",
+          error
+        );
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to delete the file record from the database",
+        });
+      }
     }),
+
   validateFileSize: privateProcedure
     .input(
       z.object({

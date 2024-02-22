@@ -22,7 +22,7 @@ const MobileNav = ({ isAuth }: { isAuth: boolean }) => {
   };
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (
         navRef.current &&
         !navRef.current.contains(event.target as Node) &&
@@ -36,13 +36,16 @@ const MobileNav = ({ isAuth }: { isAuth: boolean }) => {
     // Add when the menu is open and remove when it is closed
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     }
 
     // Clean up
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [isOpen, navRef]);
 
