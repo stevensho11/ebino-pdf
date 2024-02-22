@@ -92,7 +92,7 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
   return (
     <div className="w-full bg-white rounded-md shadow flex flex-col items-center">
       <div className="h-14 w-full border-b border-zinc-200 flex items-center justify-between px-2">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center sm:gap-1.5 xs:gap-0.5">
           <Button
             disabled={curPage <= 1}
             onClick={() => {
@@ -102,13 +102,13 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
             variant="ghost"
             aria-label="previous page"
           >
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="sm:h-4 sm:w-4 xs:w-3 xs:h-3 " />
           </Button>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center sm:gap-1.5 xs:gap-0.5">
             <Input
               {...register("page")}
               className={cn(
-                "w-12 h-8",
+                "sm:w-12 sm:h-8 xs:w-8 xs:h-6",
                 errors.page && "focus-visible:ring-red-500"
               )}
               onKeyDown={(e) => {
@@ -117,7 +117,7 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
                 }
               }}
             />
-            <p className="text-zinc-700 text-sm space-x-1">
+            <p className="text-zinc-700 sm:text-sm space-x-1 xs:text-xs">
               <span>/</span>
               <span>{numPages ?? "?"}</span>
             </p>
@@ -134,15 +134,15 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
             variant="ghost"
             aria-label="next page"
           >
-            <ChevronUp className="h-4 w-4" />
+            <ChevronUp className="sm:h-4 sm:w-4 xs:w-3 xs:h-3 " />
           </Button>
         </div>
 
-        <div className="space-x-2">
+        <div className="flex items-center sm:gap-1.5 xs:gap-0.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="gap-1.5" aria-label="zoom" variant="ghost">
-                <Search className="h-4 w-4" />
+                <Search className="sm:h-4 sm:w-4 xs:w-3 xs:h-3 " />
                 {scale * 100}%<ChevronDown className="h-3 w-3 opacity-75" />
               </Button>
             </DropdownMenuTrigger>
@@ -185,7 +185,7 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
             variant="ghost"
             aria-label="rotate 90 degrees"
           >
-            <RotateCw className="h-4 w-4" />
+            <RotateCw className="sm:h-4 sm:w-4 xs:w-3 xs:h-3 " />
           </Button>
 
           <PdfFullscreen fileId={fileId} />

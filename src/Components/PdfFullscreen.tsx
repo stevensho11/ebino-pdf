@@ -50,8 +50,12 @@ const PdfFullscreen = ({ fileId }: PdfFullscreenProps) => {
       }}
     >
       <DialogTrigger onClick={() => setIsOpen(true)} asChild>
-        <Button className="gap-1.5" variant="ghost" aria-label="fullscreen">
-          <Expand className="h-4 w-4" />
+        <Button
+          className="gap-1.5 xs:gap-0.5 "
+          variant="ghost"
+          aria-label="fullscreen"
+        >
+          <Expand className="sm:h-4 sm:w-4 xs:w-3 xs:h-3 " />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-7xl w-full">
