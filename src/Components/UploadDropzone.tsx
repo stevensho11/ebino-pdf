@@ -240,12 +240,7 @@ const UploadDropzone: React.FC = () => {
                 </div>
               ) : null}
 
-              <input
-                {...getInputProps()}
-                type="file"
-                id="dropzone-file"
-                className="hidden"
-              />
+              <input {...getInputProps()} type="file" className="hidden" />
             </label>
           </div>
         </div>

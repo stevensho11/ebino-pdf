@@ -11,7 +11,8 @@ const Page = () => {
   const { data, error } = trpc.authCallback.useQuery(undefined, {
     onSuccess: ({ success }) => {
       if (success) {
-        router.push(origin ? `/${origin}` : "/dashboard");
+        const redirectTo = origin ? `/${origin}` : "/dashboard";
+        router.push(redirectTo);
       }
     },
   });
