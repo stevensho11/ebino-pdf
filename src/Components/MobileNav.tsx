@@ -1,10 +1,16 @@
 "use client";
-import { ArrowRightCircle, Menu } from "lucide-react";
+import { ArrowRightCircle, Gem, Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { getUserSubscriptionPlan } from "@/lib/stripe";
 
-const MobileNav = ({ isAuth }: { isAuth: boolean }) => {
+interface PageProps {
+  subscriptionPlan: Awaited<ReturnType<typeof getUserSubscriptionPlan>>;
+  isAuth: boolean;
+}
+
+const MobileNav = ({ subscriptionPlan, isAuth }: PageProps) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const toggleOpen = () => setIsOpen((prev) => !prev);
   const pathName = usePathname();
@@ -103,6 +109,25 @@ const MobileNav = ({ isAuth }: { isAuth: boolean }) => {
                   >
                     Dashboard
                   </Link>
+                </li>
+                <li>
+                  {subscriptionPlan.isSubscribed ? (
+                    <Link
+                      onClick={() => closedOnCurrent("/dashboard/billing")}
+                      href="/dashboard/billing"
+                      className="flex items-center w-full font-semibold"
+                    >
+                      Manage Subscription
+                    </Link>
+                  ) : (
+                    <Link
+                      onClick={() => closedOnCurrent("/pricing")}
+                      href="/pricing"
+                      className="flex items-center w-full font-semibold"
+                    >
+                      Upgrade <Gem className="text-green-600 h-4 w-4 ml-1.5" />
+                    </Link>
+                  )}
                 </li>
                 <li className="my-3 h-px w-full bg-gray-300" />
                 <li>
