@@ -186,7 +186,7 @@ const Page = async () => {
                             variant: "secondary",
                           })}
                         >
-                          {user ? "Upgrade Now" : "Sign-Up"}{" "}
+                          {user ? "To Dashboard" : "Sign-Up"}{" "}
                           <ArrowRightCircle className="group-hover:translate-x-1 transition ease-in-out duration-300 ml-1.5 h-5 w-5" />
                         </Link>
                       ) : user ? (
