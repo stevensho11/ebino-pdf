@@ -6,24 +6,10 @@ import { useEffect, useRef, useState } from "react";
 
 const MobileNav = ({ isAuth }: { isAuth: boolean }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const toggleOpen = () => setIsOpen((prev) => !prev);
   const pathName = usePathname();
   const navRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<SVGSVGElement>(null);
-  const animationClasses = isOpen
-    ? "fixed animate-in slide-in-from-top-5 fade-in-20 inset-0 z-0 w-full"
-    : "fixed animate-out slide-out-to-top-5 fade-out-5 inset-0 z-0 w-full";
-
-  const toggleOpen = () => {
-    setIsAnimating(true);
-    setIsOpen(!isOpen);
-  };
-
-  const handleAnimationEnd = () => {
-    if (!isOpen) {
-      setIsAnimating(false);
-    }
-  };
 
   useEffect(() => {
     if (isOpen) toggleOpen();
@@ -48,18 +34,16 @@ const MobileNav = ({ isAuth }: { isAuth: boolean }) => {
     }
 
     if (isOpen) {
-      window.addEventListener("mousedown", handleClickOutside);
-      window.addEventListener("touchstart", handleClickOutside),
-        { passive: true };
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
     } else {
-      window.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     }
 
-    // Clean up
     return () => {
-      window.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [isOpen, navRef]);
 
@@ -71,11 +55,10 @@ const MobileNav = ({ isAuth }: { isAuth: boolean }) => {
         className="relative z-50 h-5 w-5 text-zinc-500"
       />
 
-      {isOpen || isAnimating ? (
+      {isOpen ? (
         <div
           ref={navRef}
-          className={animationClasses}
-          onAnimationEnd={handleAnimationEnd}
+          className="fixed animate-in slide-in-from-top-5 fade-in-20 inset-0 z-0 w-full"
         >
           <ul className="absolute bg-white border-b border-zinc-200 shadow-xl grid w-full gap-3 px-10 pt-20 pb-8">
             {!isAuth ? (
