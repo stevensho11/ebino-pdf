@@ -173,9 +173,15 @@ export const appRouter = router({
     )
     .mutation(async ({ input }) => {
       const { fileSize, mimeType } = input;
-      const maxFileSize = 8 * 1024 * 1024;
+      const subscriptionPlan = await getUserSubscriptionPlan();
+      const { isSubscribed } = subscriptionPlan;
+      let maxFileSize = 0;
 
-      console.log(`Received file size: ${fileSize}, MIME type: ${mimeType}`); // Debug log
+      if (!isSubscribed) {
+        maxFileSize = 8 * 1024 * 1024; // 8MB
+      }
+
+      maxFileSize = 32 * 1024 * 1024; // 32MB
 
       if (mimeType !== "application/pdf") {
         return { allowUpload: false, reason: "File must be a PDF" };
@@ -271,10 +277,12 @@ export const appRouter = router({
           userId: userId,
         },
       });
+
       if (!file || file.userId !== userId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Access Denied." });
       }
       try {
+        const subscriptionPlan = await getUserSubscriptionPlan();
         const response = await fetch(signedUrl);
         const blob = await response.blob();
 
@@ -282,6 +290,12 @@ export const appRouter = router({
         const pageLevelDocs = await loader.load();
 
         const pagesAmt = pageLevelDocs.length;
+
+        const { isSubscribed } = subscriptionPlan;
+        const isProExceeded =
+          pagesAmt > PLANS.find((plan) => plan.name === "Pro")!.pagesPerPdf;
+        const isFreeExceeded =
+          pagesAmt > PLANS.find((plan) => plan.name === "Free")!.pagesPerPdf;
 
         const pineconeIndex = pinecone.Index(process.env.PINECONE_INDEX!);
         const embeddings = new OpenAIEmbeddings({
@@ -293,11 +307,25 @@ export const appRouter = router({
           namespace: fileId,
         });
 
-        // Update file status to SUCCESS
-        await db.file.update({
-          where: { id: fileId },
-          data: { uploadStatus: "SUCCESS" },
-        });
+        // Update file status to SUCCESS if no plans page limits are exceeded
+        if (
+          (isSubscribed && isProExceeded) ||
+          (!isSubscribed && isFreeExceeded)
+        ) {
+          await db.file.update({
+            data: {
+              uploadStatus: "FAILED",
+            },
+            where: {
+              id: fileId,
+            },
+          });
+        } else {
+          await db.file.update({
+            where: { id: fileId },
+            data: { uploadStatus: "SUCCESS" },
+          });
+        }
 
         return { status: "success", message: "PDF processed successfully." };
       } catch (err) {

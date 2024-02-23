@@ -6,7 +6,7 @@ import { trpc } from "@/app/_trpc/client";
 import { useToast } from "./ui/use-toast";
 import { useRouter } from "next/navigation";
 
-const UploadDropzone: React.FC = () => {
+const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
   const router = useRouter();
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
@@ -20,21 +20,23 @@ const UploadDropzone: React.FC = () => {
         { fileId: file.id },
         {
           onSuccess: (data) => {
-            console.log(data.url);
             processPDF.mutate(
               { fileId: file.id, signedUrl: data.url },
               {
                 onSuccess: () => {
+                  setIsUploading(false);
                   router.push(`/dashboard/${file.id}`);
                 },
                 onError: (error) => {
                   console.error("Couldn't process PDF on server", error);
+                  setIsUploading(false);
                 },
               }
             );
           },
           onError: (error) => {
             console.error("Couldn't fetch signed URL", error);
+            setIsUploading(false);
           },
         }
       );
@@ -49,7 +51,7 @@ const UploadDropzone: React.FC = () => {
       const file = acceptedFiles[0];
 
       if (file.type === "application/pdf") {
-        if (file.size <= 8 * 1024 * 1024) {
+        if (file.size <= (isSubscribed ? 32 * 1024 * 1024 : 8 * 1024 * 1024)) {
           // File is a PDF and size is within limit
           return (
             <div className="max-w-xs bg-white flex items-center rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200">
@@ -69,7 +71,7 @@ const UploadDropzone: React.FC = () => {
                 <FileX className="h-4 w-4 text-red-500" />
               </div>
               <div className="px-3 py-2 h-full text-sm text-red-500">
-                File size exceeds 8MB
+                File size exceeds {isSubscribed ? "32MB" : "8MB"}
               </div>
             </div>
           );
@@ -145,28 +147,25 @@ const UploadDropzone: React.FC = () => {
           console.log("File uploaded successfully");
           setUploadProgress(100);
 
-          setTimeout(() => {
-            try {
-              createFileRecord({
-                name: file.name,
-                key: key,
-              });
-            } catch (error) {
-              console.error("Error creating file record", error);
-              toast({
-                title: "Error",
-                description: "Error creating file record",
-                variant: "destructive",
-              });
-            }
-
-            toast({
-              title: "Success",
-              description: "File uploaded successfully",
-              variant: "default",
+          try {
+            createFileRecord({
+              name: file.name,
+              key: key,
             });
-            setIsUploading(false);
-          }, 750);
+          } catch (error) {
+            console.error("Error creating file record", error);
+            toast({
+              title: "Error",
+              description: "Error creating file record",
+              variant: "destructive",
+            });
+          }
+
+          toast({
+            title: "Success",
+            description: "File uploaded successfully",
+            variant: "default",
+          });
         } else {
           console.error("Failed to upload file");
           toast({
@@ -222,7 +221,9 @@ const UploadDropzone: React.FC = () => {
                   <span className="font-semibold">Click to upload</span> or drag
                   and drop
                 </p>
-                <p className="text-xs text-zinc-500">PDF (up to 8MB)</p>
+                <p className="text-xs text-zinc-500">
+                  PDF (up to {isSubscribed ? "32MB" : "8MB"})
+                </p>
               </div>
               {renderFileValidation(acceptedFiles)}
               {isUploading ? (
