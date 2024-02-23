@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { getUserSubscriptionPlan } from "@/lib/stripe";
 
 interface PageProps {
-  subscriptionPlan: Awaited<ReturnType<typeof getUserSubscriptionPlan>>;
+  subscriptionPlan?: Awaited<ReturnType<typeof getUserSubscriptionPlan>>;
   isAuth: boolean;
 }
 
@@ -111,7 +111,7 @@ const MobileNav = ({ subscriptionPlan, isAuth }: PageProps) => {
                   </Link>
                 </li>
                 <li>
-                  {subscriptionPlan.isSubscribed ? (
+                  {subscriptionPlan?.isSubscribed ? (
                     <Link
                       onClick={() => closedOnCurrent("/dashboard/billing")}
                       href="/dashboard/billing"
