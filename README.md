@@ -9,7 +9,7 @@ ebinopdf is a SaaS built with Next.JS 14, TypeScript, Prisma, AWS S3, Tailwind, 
 ## Technologies Used
 
 - **Frontend**: Next.JS 14, Tailwind CSS, Next.JS App Router, shadcn-ui (for UI components)
-- **Backend**: Node.JS, tRPC
+- **Backend**: Node.JS, tRPC, tanstack/react-query
 - **Database**: planetscale for database, Prisma for ORM, AWS S3 for object storage
 - **Authentication**: Kinde Auth
 - **Payment Processing**: Stripe
